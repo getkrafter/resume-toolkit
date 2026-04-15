@@ -1,0 +1,45 @@
+{
+  "name": "@getkrafter/resume-toolkit",
+  "version": "0.0.0-development",
+  "description": "Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailoring",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/lib/index.js",
+      "types": "./dist/lib/index.d.ts"
+    }
+  },
+  "bin": {
+    "krafter-toolkit": "./dist/bin/cli.js"
+  },
+  "files": ["dist", "skills", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "keywords": ["resume", "ats", "scoring", "mcp", "ai", "skills", "tailoring"],
+  "author": "Muhammad Kasim",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getkrafter/resume-toolkit.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "natural": "^8.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "husky": "^9.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
