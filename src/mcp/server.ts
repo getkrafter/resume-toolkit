@@ -12,7 +12,9 @@
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { KrafterClient } from '../krafter/client.js';
 import { getScoringTools } from './tools/scoring.js';
+import { getKrafterTools } from './tools/krafter.js';
 
 /**
  * Create and configure the MCP server with all available tools.
@@ -45,7 +47,24 @@ export function createServer(): McpServer {
     );
   }
 
-  // Krafter tools will be registered conditionally in Task 11
+  // Register Krafter tools when an API key is configured.
+  const apiKey = process.env['KRAFTER_API_KEY'];
+  if (apiKey) {
+    const baseUrl = process.env['KRAFTER_API_URL'];
+    const client = new KrafterClient(apiKey, baseUrl);
+    for (const tool of getKrafterTools(client)) {
+      server.registerTool(
+        tool.name,
+        {
+          description: tool.description,
+          inputSchema: tool.inputSchema.shape,
+        },
+        async (args: Record<string, unknown>) => {
+          return tool.handler(args);
+        },
+      );
+    }
+  }
 
   return server;
 }
