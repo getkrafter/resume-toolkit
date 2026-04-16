@@ -56,27 +56,39 @@ transformation internally via `toResumeData`.
 
 ### Step 4 -- Run Scoring Tools
 
-Run **both** scoring tools to get the full picture:
+Run **both** scoring tools to get the full picture. Choose the method that matches your environment:
 
-**For pasted/file resumes:**
+**Option A — MCP tools available** (user has the MCP server configured):
 
-1. `score_ats` with `{ resumeText, jdText }` -- returns `ATSResult` with:
-   - `score` (0-100)
-   - `matched` keywords (array)
-   - `missing` keywords (array)
-   - `details.bigramsMatched`, `details.unigramsMatched`, `details.bigramsMissing`, `details.unigramsMissing`
+For pasted/file resumes:
+1. `score_ats` with `{ resumeText, jdText }` -- returns `ATSResult` with `score`, `matched`, `missing`, and `details` breakdown.
+2. `score_resume` with `{ resumeText, jdText }` -- returns `ResumeScore` with `total`, `mode`, `breakdown`, `ats`, and `flags`.
 
-2. `score_resume` with `{ resumeText, jdText }` -- returns `ResumeScore` with:
-   - `total` (0-100)
-   - `mode` ("with-jd")
-   - `breakdown` per dimension (quantification, verbStrength, ats, bulletStructure, sectionCompleteness)
-   - `ats` (embedded ATSResult)
-   - `flags` (diagnostic messages)
-
-**For Krafter resumes:**
-
+For Krafter resumes:
 1. `score_krafter_resume` with `{ id, jdText }` -- returns the full `ResumeScore` including the embedded `ATSResult`.
-2. Optionally also call `score_ats` directly if you need the standalone ATS breakdown.
+
+**Option B — No MCP server** (skill installed without MCP):
+
+Run this inline script. Pass `RESUME_TEXT` and `JD_TEXT` as environment variables:
+
+```bash
+node --input-type=module -e "
+import { scoreResume, scoreATS } from '@getkrafter/resume-toolkit';
+
+const resumeText = process.env.RESUME_TEXT;
+const jdText = process.env.JD_TEXT;
+
+const lines = resumeText.split('\n');
+const bullets = lines.filter(l => /^\s*[-*•]|\d+[.)]/.test(l)).map(l => l.replace(/^\s*[-*•]\s*|\d+[.)]\s*/, '').trim());
+const sections = lines.filter(l => l.trim().length < 50 && l.trim().length > 0 && !(/^\s*[-*•]|\d+[.)]/.test(l)) && (l.trim() === l.trim().toUpperCase() || /^[A-Z][a-z]/.test(l.trim()))).map(l => l.trim().toLowerCase());
+
+const atsResult = scoreATS(resumeText, jdText);
+const scoreResult = scoreResume({ rawText: resumeText, bullets, sections }, jdText);
+console.log(JSON.stringify({ atsResult, scoreResult }, null, 2));
+" <<< ""
+```
+
+If `@getkrafter/resume-toolkit` is not installed, run `npm install @getkrafter/resume-toolkit` first. Parse the JSON output and continue to Step 5.
 
 ### Step 5 -- Gap Analysis
 

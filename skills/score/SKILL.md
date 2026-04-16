@@ -69,9 +69,11 @@ You do NOT need to do this manually. The `score_resume` MCP tool handles parsing
 
 ---
 
-## Step 5 — Call the Scoring Tool
+## Step 5 — Score the Resume
 
-**Standard path** (pasted text or file):
+Choose the method that matches your environment:
+
+**Option A — MCP tools available** (user has the MCP server configured):
 
 Call the `score_resume` MCP tool:
 ```json
@@ -81,15 +83,37 @@ Call the `score_resume` MCP tool:
 }
 ```
 
-**Krafter path** (user selected a Krafter resume):
-
-Call the `score_krafter_resume` MCP tool:
+Or for Krafter resumes, call `score_krafter_resume`:
 ```json
 {
   "id": "<the resume ID from list_resumes>",
   "jdText": "<job description text, or omit if not provided>"
 }
 ```
+
+**Option B — No MCP server** (skill installed without MCP):
+
+Run this inline script to score the resume. Replace the `resumeText` and `jdText` values with the actual content:
+
+```bash
+node --input-type=module -e "
+import { scoreResume, scoreATS } from '@getkrafter/resume-toolkit';
+
+const resumeText = process.env.RESUME_TEXT;
+const jdText = process.env.JD_TEXT || '';
+
+const lines = resumeText.split('\n');
+const bullets = lines.filter(l => /^\s*[-*•]|\d+[.)]/.test(l)).map(l => l.replace(/^\s*[-*•]\s*|\d+[.)]\s*/, '').trim());
+const sections = lines.filter(l => l.trim().length < 50 && l.trim().length > 0 && !(/^\s*[-*•]|\d+[.)]/.test(l)) && (l.trim() === l.trim().toUpperCase() || /^[A-Z][a-z]/.test(l.trim()))).map(l => l.trim().toLowerCase());
+
+const result = scoreResume({ rawText: resumeText, bullets, sections }, jdText || undefined);
+console.log(JSON.stringify(result, null, 2));
+" <<< ""
+```
+
+Pass `RESUME_TEXT` and `JD_TEXT` as environment variables containing the resume and job description text. Parse the JSON output and present results per Step 6.
+
+If `@getkrafter/resume-toolkit` is not installed as a dependency, install it first: `npm install @getkrafter/resume-toolkit`
 
 ---
 
