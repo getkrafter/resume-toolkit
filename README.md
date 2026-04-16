@@ -9,7 +9,7 @@ Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailor
 ### Claude Code
 
 ```bash
-/install-skill @getkrafter/resume-toolkit
+/install-plugin @getkrafter/resume-toolkit
 ```
 
 Then use `/score` or `/tailor` in any conversation.
