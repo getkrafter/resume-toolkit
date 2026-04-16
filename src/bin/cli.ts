@@ -70,21 +70,31 @@ function parseRawText(text: string): ResumeData {
       continue;
     }
 
-    // Detect ALL CAPS or Title Case lines as sections (plain text resumes)
-    if (
-      trimmed.length < 50 &&
-      !(/^\s*[-*•]/.test(line) || /^\s*\d+[.)]/.test(line)) &&
-      (trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed))
-    ) {
+    // Detect section headings (plain text resumes)
+    // ALL CAPS lines are reliable section headings (EXPERIENCE, EDUCATION, SKILLS)
+    // Title Case only matches known resume section keywords to avoid matching job titles
+    const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed) && trimmed.length < 50;
+    const knownSectionPattern = /^(summary|profile|experience|work experience|employment|education|skills|projects|certifications?|courses?|awards?|honors?|publications?|interests?|languages?|references?|technical skills|professional experience|work history|objective|about me|volunteer)/i;
+    const isTitleCaseSection = knownSectionPattern.test(trimmed) && trimmed.length < 50;
+
+    if (!(/^\s*[-*•]/.test(line) || /^\s*\d+[.)]/.test(line)) && (isAllCaps || isTitleCaseSection)) {
       sections.push(trimmed.toLowerCase());
       currentSection = trimmed.toLowerCase();
       continue;
     }
 
-    // Detect bullet points — only count as achievement bullets in work/project sections
+    // Detect bullet points
     const isNonBulletSection = /skill|competenc|tool|technolog|proficienc/i.test(currentSection);
-    if (/^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
-      const content = trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '');
+    const isWorkSection = /experience|work|project|employment|history/i.test(currentSection);
+    const hasMarker = /^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line);
+
+    // Unmarked bullets: long sentences in work sections (no marker, but reads like an achievement)
+    const isUnmarkedBullet = !hasMarker && isWorkSection && trimmed.length > 50 && /^[A-Z][a-z]/.test(trimmed);
+
+    if (hasMarker || isUnmarkedBullet) {
+      const content = hasMarker
+        ? trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '')
+        : trimmed;
       if (isNonBulletSection) continue;
       // Skip comma-separated lists (likely skills: "React, TypeScript, Node.js")
       const commaCount = (content.match(/,/g) || []).length;
