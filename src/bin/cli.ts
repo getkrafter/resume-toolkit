@@ -81,15 +81,17 @@ function parseRawText(text: string): ResumeData {
       continue;
     }
 
-    // Detect bullet points — but only in work/project sections, not skills/education
-    const isSkillSection = /skill|competenc|certification|course|education|article/i.test(currentSection);
+    // Detect bullet points — only count as achievement bullets in work/project sections
+    const isNonBulletSection = /skill|competenc|certification|course|education|article|training|language|award|honor|interest|tool|technolog|proficienc/i.test(currentSection);
     if (/^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
       const content = trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '');
-      // Only count as a resume bullet if it's long enough to be an achievement
-      // (not a short skill name) AND not in a skills/education section
-      if (!isSkillSection && content.length > 30) {
-        bullets.push(content);
-      }
+      if (isNonBulletSection) continue;
+      // Skip comma-separated lists (likely skills: "React, TypeScript, Node.js")
+      const commaCount = (content.match(/,/g) || []).length;
+      if (commaCount >= 3 && content.length < 200) continue;
+      // Skip short items (skill names, one-liners)
+      if (content.length <= 30) continue;
+      bullets.push(content);
     }
   }
 
