@@ -10,6 +10,11 @@ import natural from 'natural';
 const porterStemmer = natural.PorterStemmer;
 const wordTokenizer = new natural.WordTokenizer();
 
+// BrillPOSTagger for verb detection fallback
+const lexicon = new natural.Lexicon('EN', 'N');
+const ruleSet = new natural.RuleSet('EN');
+const posTagger = new natural.BrillPOSTagger(lexicon, ruleSet);
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -133,6 +138,21 @@ export const VERB_TIERS: { tier1: string[]; tier2: string[]; tier3: string[] } =
     'negotiated',
     'overhauled',
     'launched',
+    'shipped',
+    'scaled',
+    'drove',
+    'owned',
+    'founded',
+    'accelerated',
+    'eliminated',
+    'secured',
+    'restructured',
+    'consolidated',
+    'mobilized',
+    'maximized',
+    'instituted',
+    'doubled',
+    'tripled',
   ],
   tier2: [
     'managed',
@@ -155,6 +175,31 @@ export const VERB_TIERS: { tier1: string[]; tier2: string[]; tier3: string[] } =
     'executed',
     'analyzed',
     'resolved',
+    'configured',
+    'deployed',
+    'integrated',
+    'migrated',
+    'refactored',
+    'mentored',
+    'facilitated',
+    'authored',
+    'collaborated',
+    'monitored',
+    'diagnosed',
+    'maintained',
+    'documented',
+    'tested',
+    'reviewed',
+    'presented',
+    'trained',
+    'researched',
+    'defined',
+    'evaluated',
+    'planned',
+    'prioritized',
+    'proposed',
+    'identified',
+    'modernized',
   ],
   tier3: [
     'helped',
@@ -283,6 +328,18 @@ export function normalise(text: string): string {
  *
  * Returns a Set containing both stemmed unigrams and raw bigrams.
  */
+/**
+ * Check if a word is a verb using BrillPOSTagger.
+ * Returns true if the POS tag starts with VB (VB, VBD, VBN, VBP, VBZ).
+ */
+export function isVerb(word: string): boolean {
+  const tagged = posTagger.tag([word.toLowerCase()]);
+  const taggedWords = tagged.taggedWords;
+  if (taggedWords.length === 0) return false;
+  const tag = taggedWords[0].tag;
+  return tag.startsWith('VB');
+}
+
 export function extractTerms(text: string): Set<string> {
   const normalised = normalise(text);
   const tokens = tokenize(normalised);

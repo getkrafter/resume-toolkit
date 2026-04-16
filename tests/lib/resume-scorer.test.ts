@@ -193,11 +193,11 @@ describe('scoreResume', () => {
       expect(result.breakdown['quantification'].score).toBe(100);
     });
 
-    it('returns 0 when no bullets have numbers', () => {
+    it('returns 0 when no bullets have numbers or quantity words', () => {
       const resume: ResumeData = {
         rawText: 'experience education skills',
         bullets: [
-          'Reduced costs significantly',
+          'Reduced costs across the board',
           'Led a team of engineers',
           'Processed events daily',
         ],
@@ -205,6 +205,21 @@ describe('scoreResume', () => {
       };
       const result = scoreResume(resume);
       expect(result.breakdown['quantification'].score).toBe(0);
+    });
+
+    it('gives partial credit for quantity words', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          'Reduced costs significantly across all departments',
+          'Led a team of engineers',
+          'Dramatically improved system uptime',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      // 2 of 3 bullets have quantity words (30 pts each) → (30+0+30)/3 = 20
+      expect(result.breakdown['quantification'].score).toBe(20);
     });
 
     it('returns 0 when bullets array is empty', () => {
@@ -258,17 +273,31 @@ describe('scoreResume', () => {
       expect(result.breakdown['verbStrength'].score).toBe(20);
     });
 
-    it('scores 40 for unrecognized verbs', () => {
+    it('scores 0 for non-verb openers', () => {
       const resume: ResumeData = {
         rawText: 'experience education skills',
         bullets: [
-          'Configured network settings for optimal throughput',
-          'Tested applications to ensure quality requirements were met',
+          'Quarterly reports were generated for all departments',
+          'Revenue targets were consistently met across all regions',
         ],
         sections: ['experience', 'education', 'skills'],
       };
       const result = scoreResume(resume);
-      expect(result.breakdown['verbStrength'].score).toBe(40);
+      expect(result.breakdown['verbStrength'].score).toBe(0);
+    });
+
+    it('scores 60 for verbs detected by POS tagger fallback', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          'Audited security protocols across the entire infrastructure',
+          'Synthesized research findings into actionable recommendations',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      // POS tagger identifies these as verbs → tier 2 → score 60
+      expect(result.breakdown['verbStrength'].score).toBe(60);
     });
 
     it('returns 0 for empty bullets', () => {
@@ -296,14 +325,16 @@ describe('scoreResume', () => {
       expect(result.breakdown['bulletStructure'].score).toBe(100);
     });
 
-    it('returns 0 when no bullets are strong', () => {
+    it('returns low score for weak bullets (partial credit)', () => {
       const resume: ResumeData = {
         rawText: 'experience education skills',
         bullets: ['Did stuff', 'Made things'],
         sections: ['experience', 'education', 'skills'],
       };
       const result = scoreResume(resume);
-      expect(result.breakdown['bulletStructure'].score).toBe(0);
+      // "Did" and "Made" are POS-detected verbs (40pts each), but short + no numbers
+      // So partial credit but low
+      expect(result.breakdown['bulletStructure'].score).toBeLessThan(50);
     });
 
     it('returns 0 for empty bullets', () => {
@@ -314,6 +345,60 @@ describe('scoreResume', () => {
       };
       const result = scoreResume(resume);
       expect(result.breakdown['bulletStructure'].score).toBe(0);
+    });
+
+    it('scores partial credit for 2-of-3 bullet criteria', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          // Has verb (Led) + number (5) but short (<8 words) → 40+35 = 75
+          'Led 5 engineers',
+          // Has verb (Built) + 8+ words but no number → 40+25 = 65
+          'Built a scalable microservices architecture for the web platform',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      // Average of 75 and 65 = 70
+      expect(result.breakdown['bulletStructure'].score).toBe(70);
+    });
+
+    it('scores 100 when all 3 criteria met', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          'Led team of 8 engineers across 3 time zones to deliver on schedule',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      expect(result.breakdown['bulletStructure'].score).toBe(100);
+    });
+  });
+
+  describe('expanded verb tiers', () => {
+    it('newly added tier1 verbs resolve correctly (shipped)', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          'Shipped a critical feature ahead of schedule to production',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      expect(result.breakdown['verbStrength'].score).toBe(100);
+    });
+
+    it('newly added tier2 verbs resolve correctly (deployed)', () => {
+      const resume: ResumeData = {
+        rawText: 'experience education skills',
+        bullets: [
+          'Deployed containerized services across multiple cloud regions',
+        ],
+        sections: ['experience', 'education', 'skills'],
+      };
+      const result = scoreResume(resume);
+      expect(result.breakdown['verbStrength'].score).toBe(60);
     });
   });
 

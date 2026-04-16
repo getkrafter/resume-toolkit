@@ -15,7 +15,7 @@ import type {
   ATSResult,
   VerbTier,
 } from './types.js';
-import { stem, tokenize, STOP_WORDS, VERB_TIERS } from './text-utils.js';
+import { stem, tokenize, STOP_WORDS, VERB_TIERS, isVerb } from './text-utils.js';
 import { scoreATS } from './ats-scorer.js';
 
 // ---------------------------------------------------------------------------
@@ -41,6 +41,22 @@ const REQUIRED_SECTION_POINTS = 20;
 const RECOMMENDED_SECTION_POINTS = 100 / 3 - 13; // ~13.33
 // More precise: 40 / 3 = 13.333...
 const RECOMMENDED_POINTS = 40 / 3;
+
+/** Quantity words that indicate measurement without concrete numbers. */
+const QUANTITY_WORDS = new Set([
+  'significantly',
+  'substantially',
+  'dramatically',
+  'multiple',
+  'numerous',
+  'extensive',
+  'considerable',
+  'major',
+  'large-scale',
+  'enterprise-wide',
+  'company-wide',
+  'organization-wide',
+]);
 
 // ---------------------------------------------------------------------------
 // Pre-computed stemmed verb tiers for fast lookup
@@ -71,23 +87,38 @@ function buildStemmedVerbMap(): Map<string, 1 | 2 | 3> {
 // ---------------------------------------------------------------------------
 
 /**
- * Fraction of bullets that contain at least one number or metric.
+ * Score bullets for quantification. Concrete numbers get full credit (100 pts),
+ * quantity words (e.g. "significantly") get partial credit (30 pts).
  * Returns 0-100. Returns 0 for empty bullets array.
  */
 export function scoreQuantification(bullets: string[]): number {
   if (bullets.length === 0) return 0;
 
-  const withNumbers = bullets.filter((b) => /\d+/.test(b)).length;
-  return (withNumbers / bullets.length) * 100;
+  let total = 0;
+  for (const bullet of bullets) {
+    if (/\d+/.test(bullet)) {
+      total += 100;
+    } else {
+      const lower = bullet.toLowerCase();
+      const hasQuantityWord = [...QUANTITY_WORDS].some((w) => lower.includes(w));
+      if (hasQuantityWord) {
+        total += 30;
+      }
+    }
+  }
+  return total / bullets.length;
 }
 
 /**
  * Determine the verb tier for a bullet based on its first non-stop-word token.
  *
- * Tokenizes the bullet, skips stop words, takes the first meaningful token,
- * stems it, and looks it up in the pre-computed stemmed verb map.
+ * 1. Tokenizes the bullet, skips stop words, takes the first meaningful token.
+ * 2. Stems it and looks it up in the pre-computed stemmed verb map (authoritative).
+ * 3. If not in our curated list, falls back to BrillPOSTagger:
+ *    - If tagged as a verb (VB/VBD/VBN/VBP/VBZ) → tier 2
+ *    - If not a verb → null (score 0)
  *
- * Returns 1 (strong), 2 (solid), 3 (weak), or null (unrecognized).
+ * Returns 1 (strong), 2 (solid), 3 (weak), or null (not a verb).
  */
 export function getVerbTier(bullet: string): VerbTier {
   const tokens = tokenize(bullet);
@@ -97,49 +128,58 @@ export function getVerbTier(bullet: string): VerbTier {
   if (!firstMeaningful) return null;
 
   const stemmed = stem(firstMeaningful);
-  return STEMMED_VERB_MAP.get(stemmed) ?? null;
+  const curatedTier = STEMMED_VERB_MAP.get(stemmed);
+  if (curatedTier !== undefined) return curatedTier;
+
+  // POS tagger fallback: any real verb gets tier 2 credit
+  if (isVerb(firstMeaningful)) return 2;
+
+  return null;
 }
 
 /**
  * Average verb tier quality across bullets.
- * Scoring: tier1=100, tier2=60, tier3=20, null=40.
+ * Scoring: tier1=100, tier2=60, tier3=20, null (not a verb)=0.
  * Returns 0-100. Returns 0 for empty bullets array.
  */
 export function scoreVerbStrength(bullets: string[]): number {
   if (bullets.length === 0) return 0;
 
   const tierScores: Record<number, number> = { 1: 100, 2: 60, 3: 20 };
-  const unrecognizedScore = 40;
 
   let total = 0;
   for (const bullet of bullets) {
     const tier = getVerbTier(bullet);
-    total += tier !== null ? tierScores[tier] : unrecognizedScore;
+    total += tier !== null ? tierScores[tier] : 0;
   }
 
   return total / bullets.length;
 }
 
 /**
- * Fraction of "strong" bullets. A bullet is strong if it:
- * - Starts with a recognized verb (tier 1, 2, or 3)
- * - Contains a number (`/\d+/`)
- * - Has 8+ words
+ * Weighted partial-credit bullet structure scoring.
+ * Each bullet earns points for:
+ * - Recognized verb opener: 40 points
+ * - Contains a number: 35 points
+ * - 8+ words (sufficient detail): 25 points
  *
+ * A bullet with all 3 scores 100. Two of 3 scores 60-75.
  * Returns 0-100. Returns 0 for empty bullets array.
  */
 export function scoreBulletStructure(bullets: string[]): number {
   if (bullets.length === 0) return 0;
 
-  const strong = bullets.filter((bullet) => {
+  let total = 0;
+  for (const bullet of bullets) {
+    let bulletScore = 0;
     const tier = getVerbTier(bullet);
-    const hasVerb = tier !== null;
-    const hasNumber = /\d+/.test(bullet);
-    const wordCount = tokenize(bullet).length;
-    return hasVerb && hasNumber && wordCount >= 8;
-  }).length;
+    if (tier !== null) bulletScore += 40;
+    if (/\d+/.test(bullet)) bulletScore += 35;
+    if (tokenize(bullet).length >= 8) bulletScore += 25;
+    total += bulletScore;
+  }
 
-  return (strong / bullets.length) * 100;
+  return total / bullets.length;
 }
 
 /**
