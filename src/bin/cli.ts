@@ -49,24 +49,49 @@ function getFlag(args: string[], flag: string): string | undefined {
 }
 
 function parseRawText(text: string): ResumeData {
+  // Strip markdown formatting for rawText
+  const cleanText = text.replace(/^#+\s+/gm, '').replace(/\*+([^*]+)\*+/g, '$1');
+
   const lines = text.split('\n');
   const bullets: string[] = [];
   const sections: string[] = [];
+  let currentSection = '';
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    if (/^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
-      bullets.push(trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, ''));
-    } else if (
+    // Detect markdown headings as sections
+    const headingMatch = trimmed.match(/^#{1,3}\s+(.+)/);
+    if (headingMatch) {
+      const heading = headingMatch[1].replace(/\|.*$/, '').trim().toLowerCase();
+      sections.push(heading);
+      currentSection = heading;
+      continue;
+    }
+
+    // Detect ALL CAPS or Title Case lines as sections (plain text resumes)
+    if (
       trimmed.length < 50 &&
-      (trimmed === trimmed.toUpperCase() || /^[A-Z][a-z]/.test(trimmed)) &&
-      !/^\s*[-*•]|\d+[.)]/.test(trimmed)
+      !(/^\s*[-*•]/.test(line) || /^\s*\d+[.)]/.test(line)) &&
+      (trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed))
     ) {
       sections.push(trimmed.toLowerCase());
+      currentSection = trimmed.toLowerCase();
+      continue;
+    }
+
+    // Detect bullet points — but only in work/project sections, not skills/education
+    const isSkillSection = /skill|competenc|certification|course|education|article/i.test(currentSection);
+    if (/^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
+      const content = trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '');
+      // Only count as a resume bullet if it's long enough to be an achievement
+      // (not a short skill name) AND not in a skills/education section
+      if (!isSkillSection && content.length > 30) {
+        bullets.push(content);
+      }
     }
   }
 
-  return { rawText: text, bullets, sections };
+  return { rawText: cleanText, bullets, sections };
 }
