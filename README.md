@@ -6,28 +6,13 @@ Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailor
 
 ## Quick Start — Skills (no account needed)
 
-### Claude Code
+### All platforms (Claude Code, Cursor, Windsurf, OpenCode, Codex)
 
 ```bash
-/install-plugin @getkrafter/resume-toolkit
+npx skills add getkrafter/resume-toolkit
 ```
 
 Then use `/score` or `/tailor` in any conversation.
-
-### Cursor
-
-Add to Settings → Remote Rule:
-
-```
-https://github.com/getkrafter/resume-toolkit/blob/master/skills/score/SKILL.md
-https://github.com/getkrafter/resume-toolkit/blob/master/skills/tailor/SKILL.md
-```
-
-Or copy the `skills/` directory to `.cursor/skills/` in your project.
-
-### Windsurf
-
-Copy the `skills/` directory to `.windsurf/skills/` or `.agents/skills/` in your project.
 
 ## Quick Start — MCP Server
 
