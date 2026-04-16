@@ -82,7 +82,7 @@ function parseRawText(text: string): ResumeData {
     }
 
     // Detect bullet points — only count as achievement bullets in work/project sections
-    const isNonBulletSection = /skill|competenc|certification|course|education|article|training|language|award|honor|interest|tool|technolog|proficienc/i.test(currentSection);
+    const isNonBulletSection = /skill|competenc|tool|technolog|proficienc/i.test(currentSection);
     if (/^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
       const content = trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '');
       if (isNonBulletSection) continue;
