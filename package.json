@@ -10,7 +10,10 @@
     }
   },
   "bin": {
-    "krafter-toolkit": "./dist/bin/cli.js"
+    "resume-toolkit": "dist/bin/cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",
