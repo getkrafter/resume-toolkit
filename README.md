@@ -45,7 +45,7 @@ Then use `/score` or `/tailor` in any conversation.
 }
 ```
 
-Generate an API key at [krafter.app](https://krafter.app) → Settings → AI Integrations.
+Generate an API key at [krafter.vercel.app](https://krafter.vercel.app) → Settings → AI Integrations.
 
 ## Library Usage
 

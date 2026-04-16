@@ -26,7 +26,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "node scripts/stamp-skill-versions.js",
+    "postinstall": "node scripts/check-skill-versions.js || true"
   },
   "keywords": [
     "resume",

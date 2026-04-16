@@ -24,7 +24,7 @@ export class KrafterClient {
 
   constructor(apiKey: string, baseUrl?: string) {
     this.apiKey = apiKey;
-    this.baseUrl = baseUrl ?? 'https://krafter.app';
+    this.baseUrl = baseUrl ?? 'https://krafter.vercel.app';
   }
 
   // ---------------------------------------------------------------------------

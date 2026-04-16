@@ -1,6 +1,7 @@
 ---
 name: tailor
 description: Analyze resume gaps against a job description and suggest targeted rewrites. Truth-preserving — never fabricates experience.
+version: 0.0.0-development
 ---
 
 # /tailor -- JD-Targeted Resume Optimization

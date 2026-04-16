@@ -18,7 +18,7 @@ export class KrafterError extends Error {
 export class KrafterAuthError extends KrafterError {
   constructor() {
     super(
-      'Invalid API key. Generate one at krafter.app → Settings → AI Integrations.',
+      'Invalid API key. Generate one at https://krafter.vercel.app → Settings → AI Integrations.',
       401,
     );
     this.name = 'KrafterAuthError';

@@ -50,7 +50,7 @@ describe('KrafterClient', () => {
 
       expect(mockFetch).toHaveBeenCalledOnce();
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://krafter.app/api/mcp');
+      expect(url).toBe('https://krafter.vercel.app/api/mcp');
       expect(init.method).toBe('POST');
       expect(init.headers).toEqual(
         expect.objectContaining({
@@ -80,7 +80,7 @@ describe('KrafterClient', () => {
       fresh.listResumes();
 
       const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://krafter.app/api/mcp');
+      expect(url).toBe('https://krafter.vercel.app/api/mcp');
     });
   });
 

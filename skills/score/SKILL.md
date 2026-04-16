@@ -1,6 +1,7 @@
 ---
 name: score
 description: Score a resume for quality and ATS keyword match. Deterministic — same input always produces the same score.
+version: 0.0.0-development
 ---
 
 # Score a Resume
@@ -164,13 +165,24 @@ Use these human-readable dimension names:
 
 For the Interpretation column, give a brief plain-English reading of what the score means for that specific resume. Do not just restate the number. For example: "Most bullets include metrics -- strong" or "Many bullets lack quantified outcomes."
 
+**IMPORTANT: Output Phase 1 (6a + 6b) to the user BEFORE generating Phase 2 (6c onward). Do not buffer the entire response.**
+
+> Analyzing your bullets for specific improvement suggestions...
+
 ### 6c. Weakest Dimensions -- Actionable Advice
 
 Identify the 2-3 dimensions with the lowest scores. For each:
 
 1. Explain what the dimension measures in one sentence.
 2. Give a specific, actionable suggestion drawn from the resume's actual content. Reference real bullets or sections from the resume where possible.
-3. Provide a concrete before/after example if the content allows it.
+3. Provide a concrete before/after example using `diff` code blocks for visual distinction:
+
+```diff
+- Built and maintained web apps, Electron desktop applications, and migration scripts
++ Built 5+ web apps and 2 Electron clients serving 200+ users, reducing deployment failures by 30%
+```
+
+Always use this diff format for before/after examples — Claude Code renders them with red/green coloring.
 
 ### 6d. ATS Keyword Analysis (with-jd mode only)
 
@@ -199,3 +211,32 @@ Follow these rules for all commentary:
 - **Use encouraging language.** Prefer "you can" and "consider" over "you should" and "you need to."
 - **Never be dismissive.** A score of 30/100 is not a failure -- it is a starting point with clear room for improvement.
 - **Keep it concise.** Aim for a focused, scannable response. Use the table for the breakdown and prose for the narrative. Do not repeat information from the table in the narrative.
+
+---
+
+## Step 7 — Comprehensive Feedback Option
+
+After presenting the 2-3 weakest dimension suggestions, offer:
+
+> Would you like me to generate detailed suggestions for every bullet point?
+
+If the user says yes, produce a diff block for EVERY bullet, grouped by job/section, with a one-line "Why" explanation per change. Use the same `diff` code block format from Step 6c.
+
+**Critical rule: truth-preserving interview.** When generating comprehensive feedback, you will encounter bullets where you lack specific details — numbers, timeframes, team sizes, scale of impact. **Do NOT invent figures.** Instead, interview the user:
+
+- "You mentioned improving system performance — do you recall by how much? A percentage, response time reduction, or throughput increase?"
+- "This bullet mentions leading a team — how many people were on the team?"
+- "You describe a migration project — how many records/services/users were affected?"
+- "How long did this project take? Weeks, months?"
+
+**The interview flow:**
+
+1. Present the bullet as-is.
+2. Identify what's missing (quantification, scope, timeframe, impact).
+3. Ask the user for the specific detail.
+4. Once they answer, generate the improved version with their real numbers.
+5. If they don't know or can't recall, suggest a range or qualitative framing that's honest: "Improved system reliability" is better than a fabricated "reduced downtime by 40%."
+
+**Philosophy:** Resume writing is daunting. Some people undersell themselves; others exaggerate. Your job is to help them present their actual experience in the strongest truthful framing. Never nudge toward fabrication. If they did it, help them say it powerfully. If they didn't, don't suggest they claim it.
+
+This makes the scoring skill a gateway into guided resume improvement — score first, then refine with the user's real experience as the source of truth.
