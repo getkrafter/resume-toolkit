@@ -93,7 +93,7 @@ Or for Krafter resumes, call `score_krafter_resume`:
 
 **Option B — CLI** (no MCP server needed):
 
-1. Write the resume text to a temp file (e.g., `/tmp/resume.txt`) as **plain text** — no markdown formatting, no `#` headings, no `- ` bullet prefixes. Use the original resume formatting as-is from the source document.
+1. Write the resume text to a temp file (e.g., `/tmp/resume.txt`) as **plain text** — no markdown formatting, no `#` headings. Preserve bullet markers (`-`, `•`, `*`) from the original document as-is.
 2. If a JD was provided, write it to another temp file (e.g., `/tmp/jd.txt`).
 3. Run:
 
