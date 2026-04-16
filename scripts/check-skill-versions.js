@@ -2,7 +2,7 @@
 
 /**
  * Postinstall check: compares this package's version against the version
- * frontmatter in ~/.agents/skills/{score,tailor}/SKILL.md.
+ * frontmatter in ~/.agents/skills/score/SKILL.md.
  * If skills are older, prints a boxed update notification.
  * Never throws — wrapped in try/catch so installs always succeed.
  */
@@ -22,7 +22,7 @@ try {
   // Don't check during development
   if (packageVersion === '0.0.0-development') process.exit(0);
 
-  const skillNames = ['score', 'tailor'];
+  const skillNames = ['score'];
   const skillsRoot = join(homedir(), '.agents', 'skills');
 
   let installedVersion = null;

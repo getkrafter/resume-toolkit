@@ -1,10 +1,10 @@
 # @getkrafter/resume-toolkit
 
-Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailoring. Works as an MCP server, a scoring library, and AI skills for Claude Code, Cursor, and Windsurf.
+Deterministic resume scoring, ATS keyword matching, and guided resume improvement. Works as an MCP server, a scoring library, and an AI skill for Claude Code, Cursor, and Windsurf.
 
 **Same input always produces the same score.** The AI handles parsing and explanation — the scoring is pure math.
 
-## Quick Start — Skills (no account needed)
+## Quick Start — Skill (no account needed)
 
 ### All platforms (Claude Code, Cursor, Windsurf, OpenCode, Codex)
 
@@ -12,7 +12,53 @@ Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailor
 npx skills add getkrafter/resume-toolkit
 ```
 
-Then use `/score` or `/tailor` in any conversation.
+Then use `/score` in any conversation to start.
+
+## What You Can Do
+
+### Score your resume for general quality
+
+Just run `/score` and paste your resume when asked. You'll get a breakdown across 5 dimensions — measurable results, action verbs, bullet quality, section coverage — with specific before/after suggestions for your weakest areas.
+
+```
+/score
+> [paste your resume]
+> [skip the JD prompt]
+```
+
+### Score against a specific job description
+
+Provide a JD to unlock ATS keyword matching. You'll see which keywords you're hitting, which are missing, and exactly which bullets to tweak to close the gaps — with confidence notes so you never add something you didn't actually do.
+
+```
+/score
+> [paste your resume]
+> [paste the job description]
+```
+
+### Score from a file
+
+Point to a file on disk instead of pasting:
+
+```
+/score
+> my resume is at ~/Documents/resume.pdf
+```
+
+### Score a Krafter resume
+
+If you have the MCP server configured with a Krafter API key, pull your resume directly:
+
+```
+/score
+> score my Krafter resume
+```
+
+### Walk through every bullet with a guided interview
+
+After seeing your scores, say "yes" when asked if you'd like to improve every bullet. The skill walks you through each one, asking for your real numbers — team sizes, user counts, performance gains — one question at a time. You pick from suggested ranges or type your own answer. It then crafts the improved bullet using your actual experience.
+
+This is the core value: you don't need to be a resume writer. Just answer the questions honestly and the skill frames your experience in the strongest truthful way.
 
 ## Quick Start — MCP Server
 
@@ -101,13 +147,6 @@ const resumeData = toResumeData(krafterResumeObject);
 | `list_templates` | List available templates |
 | `get_resume_schema` | Get the resume data schema |
 
-## Skills
-
-| Skill | Description |
-|---|---|
-| `/score` | Guided resume scoring — paste or provide a resume, optionally add a JD, get a detailed score breakdown with actionable advice |
-| `/tailor` | Gap analysis against a JD — identifies missing keywords, suggests truth-preserving rewrites with before/after format |
-
 ## Scoring Dimensions
 
 | Dimension | Weight (with JD) | What it measures |
@@ -119,21 +158,6 @@ const resumeData = toResumeData(krafterResumeObject);
 | Section Completeness | 10% | Presence of expected resume sections |
 
 When no JD is provided, the 30% ATS weight redistributes proportionally across the other dimensions.
-
-## Contributing
-
-```bash
-git clone https://github.com/getkrafter/resume-toolkit.git
-cd resume-toolkit
-npm install
-npm test        # run tests
-npm run build   # compile TypeScript
-```
-
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
-- `feat: ...` → minor version bump
-- `fix: ...` → patch version bump
-- `feat!: ...` → major version bump
 
 ## License
 

@@ -1,12 +1,14 @@
 ---
 name: score
-description: Score a resume for quality and ATS keyword match. Deterministic — same input always produces the same score.
+description: Score a resume for quality and ATS keyword match. With a JD, also performs gap analysis and keyword tailoring. Deterministic — same input always produces the same score.
 version: 0.0.0-development
 ---
 
 # Score a Resume
 
-You are guiding the user through resume scoring using the `@getkrafter/resume-toolkit` scoring engine. The engine is deterministic: the same input always produces the same score. Your job is to collect the resume, optionally a job description, and then call the scoring tool and present the results clearly.
+You are guiding the user through resume scoring and improvement using the `@getkrafter/resume-toolkit` scoring engine. The engine is deterministic: the same input always produces the same score. Your job is to collect the resume, optionally a job description, score it, present results clearly, and guide the user through improving their bullets one at a time.
+
+When a job description is provided, you also perform ATS gap analysis and keyword tailoring — classifying missing keywords as resolvable or unresolvable and suggesting truth-preserving rewrites.
 
 ---
 
@@ -92,6 +94,14 @@ Or for Krafter resumes, call `score_krafter_resume`:
 }
 ```
 
+**When a JD is provided**, also call `score_ats` to get the detailed keyword breakdown needed for gap analysis:
+```json
+{
+  "resumeText": "<the full resume text>",
+  "jdText": "<job description text>"
+}
+```
+
 **Option B — CLI** (no MCP server needed):
 
 1. Write the resume text to a temp file (e.g., `/tmp/resume.txt`) as **plain text** — no markdown formatting, no `#` headings. Preserve bullet markers (`-`, `•`, `*`) from the original document as-is.
@@ -102,11 +112,12 @@ Or for Krafter resumes, call `score_krafter_resume`:
 # Without JD:
 npx @getkrafter/resume-toolkit score --resume /tmp/resume.txt
 
-# With JD:
+# With JD (run both):
 npx @getkrafter/resume-toolkit score --resume /tmp/resume.txt --jd /tmp/jd.txt
+npx @getkrafter/resume-toolkit ats --resume /tmp/resume.txt --jd /tmp/jd.txt
 ```
 
-The output is a JSON `ResumeScore` object. Parse it and present results per Step 6.
+The `score` command returns a JSON `ResumeScore` object. The `ats` command returns a JSON `ATSResult` with detailed `matched`/`missing` keyword lists. Parse both and present results per Step 6.
 
 ---
 
@@ -184,13 +195,44 @@ Identify the 2-3 dimensions with the lowest scores. For each:
 
 Always use this diff format for before/after examples — Claude Code renders them with red/green coloring.
 
-### 6d. ATS Keyword Analysis (with-jd mode only)
+### 6d. ATS Keyword Analysis and Gap Classification (with-jd mode only)
 
-If ATS results are present:
+If ATS results are present, present a full keyword analysis:
 
-- State the ATS match percentage.
-- List the **top 5 missing keywords** from `ats.missing` (or fewer if there are fewer than 5).
-- Briefly suggest where in the resume each missing keyword could naturally be incorporated.
+#### Matched Keywords (What's Working)
+
+List all matched keywords from the ATS result. Group by bigrams and unigrams if the list is long. This shows the user what they're already doing well.
+
+#### Gap Analysis
+
+For **each missing keyword/term** from the ATS result:
+
+1. **Search the resume** for related experience that could be reframed. Look for:
+   - Synonyms or adjacent concepts (e.g., "container orchestration" relates to "Kubernetes")
+   - Implicit skills (e.g., "built CI/CD pipelines" implies familiarity with automation tools)
+   - Bullets that describe the activity without naming the specific technology
+
+2. **Resolvable gap** — the resume already contains evidence that could be reworded to surface the keyword. Present a rewrite suggestion:
+
+```diff
+- Led team of 8 engineers to deliver platform
++ Led team of 8 engineers to deliver microservices platform using Kubernetes
+```
+
+**Confidence note (REQUIRED on every rewrite that introduces a new keyword):** "Only add [keyword] if you actually [did/used/worked with] it."
+
+3. **Unresolvable gap** — the keyword requires experience the resume does not reflect. Frame as an opportunity:
+
+> **[Keyword]** — This JD requires [keyword] experience. Consider adding this if you have relevant experience from side projects, coursework, or certifications.
+
+#### Projected ATS Impact
+
+Calculate projected improvement assuming all resolvable gaps are addressed:
+- Current matched = number of matched terms
+- Projected matched = current matched + number of resolvable gaps
+- Total JD terms = matched + missing
+- Use bigram weight (1.5) and unigram weight (1.0) for accurate projection
+- Present as: "Implementing these changes could improve your ATS match from X% to ~Y%."
 
 ### 6e. Flags
 
@@ -214,29 +256,50 @@ Follow these rules for all commentary:
 
 ---
 
-## Step 7 — Comprehensive Feedback Option
+## Step 7 — Comprehensive Feedback: One-at-a-Time Interview
 
 After presenting the 2-3 weakest dimension suggestions, offer:
 
-> Would you like me to generate detailed suggestions for every bullet point?
+> Would you like me to walk through every bullet and help you strengthen them? I'll go one at a time — you just answer my questions and I'll craft the improved version.
 
-If the user says yes, produce a diff block for EVERY bullet, grouped by job/section, with a one-line "Why" explanation per change. Use the same `diff` code block format from Step 6c.
+If the user says yes, begin the interview. **You are a guide and interviewer, not a question generator.** Do NOT list all questions at once. Do NOT present a wall of questions the user has to read through. Walk through bullets **one at a time**, like a conversation.
 
-**Critical rule: truth-preserving interview.** When generating comprehensive feedback, you will encounter bullets where you lack specific details — numbers, timeframes, team sizes, scale of impact. **Do NOT invent figures.** Instead, interview the user:
+### Interview Rules
 
-- "You mentioned improving system performance — do you recall by how much? A percentage, response time reduction, or throughput increase?"
-- "This bullet mentions leading a team — how many people were on the team?"
-- "You describe a migration project — how many records/services/users were affected?"
-- "How long did this project take? Weeks, months?"
+1. **One bullet per turn.** Show the current bullet, explain what's missing, ask ONE focused question, then STOP and wait for the user's answer.
+2. **Use `AskUserQuestion`** to present each question. Offer concrete options where possible (e.g., suggested ranges, "not sure" as an option) so the user can respond quickly. Include a text-input option for custom answers.
+3. **After each answer**, immediately generate the improved bullet as a `diff` block, then move to the next bullet.
+4. **Group by role/section.** Announce when you're moving to a new role: "Let's move on to your Emumba bullets."
+5. **Keep it conversational.** You're sitting across from someone helping them remember their accomplishments. Ask follow-up questions if their answer opens up a stronger framing. Rephrase or probe from different angles if they're unsure.
+6. **Never batch questions.** Even if you know you need 3 pieces of info for one bullet, ask the most important one first. You can ask follow-ups after they respond.
 
-**The interview flow:**
+### Interview Flow Per Bullet
 
-1. Present the bullet as-is.
-2. Identify what's missing (quantification, scope, timeframe, impact).
-3. Ask the user for the specific detail.
-4. Once they answer, generate the improved version with their real numbers.
-5. If they don't know or can't recall, suggest a range or qualitative framing that's honest: "Improved system reliability" is better than a fabricated "reduced downtime by 40%."
+1. **Present** the bullet as-is in a quote block.
+2. **Identify** what's missing — this includes:
+   - **Quality gaps**: quantification, scope, timeframe, impact (always)
+   - **Keyword gaps** (with-jd mode): if this bullet has a resolvable keyword gap from Step 6d, mention it here too
+3. **Ask ONE question** using `AskUserQuestion` with helpful options. Examples:
+   - "Roughly how many users did this serve?" → Options: "~50", "~200", "500+", "Not sure"
+   - "Do you remember the build time improvement?" → Options: "Minutes to seconds", "Cut in half", "Marginal improvement", "Not sure"
+   - "This bullet could surface 'Kubernetes' — did you actually use it here?" → Options: "Yes, used it directly", "Used something similar", "No", "Not sure"
+4. **Wait** for their response. Do not proceed until they answer.
+5. **Generate** the improved bullet as a `diff` block with a one-line "Why" explanation. If a keyword was confirmed, include a confidence note.
+6. **Move** to the next bullet.
 
-**Philosophy:** Resume writing is daunting. Some people undersell themselves; others exaggerate. Your job is to help them present their actual experience in the strongest truthful framing. Never nudge toward fabrication. If they did it, help them say it powerfully. If they didn't, don't suggest they claim it.
+### Handling "Not Sure"
 
-This makes the scoring skill a gateway into guided resume improvement — score first, then refine with the user's real experience as the source of truth.
+If the user doesn't remember a specific number:
+- Suggest a qualitative framing that's still strong: "Improved system reliability" is better than a fabricated "reduced downtime by 40%."
+- Offer to use vague-but-honest language: "multiple", "several", "significantly."
+- Never push — accept "not sure" gracefully and move on.
+
+### Critical Rule: Truth-Preserving
+
+**Do NOT invent figures.** Every number in a rewritten bullet must come from the user's own answer. If they didn't give you a number, don't put one in. The goal is to help them present their actual experience in the strongest truthful framing.
+
+### Philosophy
+
+Resume writing is daunting. Some people undersell themselves; others exaggerate. Your job is to help them present their actual experience in the strongest truthful framing. Never nudge toward fabrication. If they did it, help them say it powerfully. If they didn't, don't suggest they claim it.
+
+This makes the scoring skill a gateway into guided resume improvement — score first, then refine through a real conversation with the user as the source of truth.

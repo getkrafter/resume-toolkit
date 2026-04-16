@@ -1,7 +1,7 @@
 {
   "name": "@getkrafter/resume-toolkit",
   "version": "0.0.0-development",
-  "description": "Deterministic resume scoring, ATS keyword matching, and AI-powered resume tailoring",
+  "description": "Deterministic resume scoring, ATS keyword matching, and guided resume improvement",
   "type": "module",
   "exports": {
     ".": {
@@ -37,7 +37,8 @@
     "mcp",
     "ai",
     "skills",
-    "tailoring"
+    "interview",
+    "improvement"
   ],
   "author": "Muhammad Kasim",
   "license": "MIT",
@@ -47,6 +48,11 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "overrides": {
+    "natural": {
+      "dotenv": "16.4.7"
+    }
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
