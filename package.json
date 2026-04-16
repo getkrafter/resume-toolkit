@@ -10,12 +10,13 @@
     }
   },
   "bin": {
-    "resume-toolkit": "dist/bin/cli.js"
+    "resume-toolkit": "bin/cli.sh"
   },
   "publishConfig": {
     "access": "public"
   },
   "files": [
+    "bin",
     "dist",
     "skills",
     "README.md",
