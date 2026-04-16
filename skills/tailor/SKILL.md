@@ -69,7 +69,7 @@ For Krafter resumes:
 
 **Option B — CLI** (no MCP server needed):
 
-1. Write the resume text to `/tmp/resume.txt` and the JD to `/tmp/jd.txt`.
+1. Write the resume text to `/tmp/resume.txt` and the JD to `/tmp/jd.txt`. Use **plain text** — no markdown formatting, no `#` headings, no `- ` bullet prefixes. Preserve the original resume formatting as-is.
 2. Run both commands:
 
 ```bash
