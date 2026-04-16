@@ -109,6 +109,23 @@ describe('scoring tools', () => {
     expect(parsed.breakdown.sectionCompleteness.score).toBeGreaterThan(0);
   });
 
+  it('score_resume detects Title Case section headings', async () => {
+    const result = await scoreResumeTool.handler({
+      resumeText: [
+        'Experience',
+        '- Spearheaded migration to microservices, reducing latency by 40%',
+        'Education',
+        '- BS Computer Science, Stanford University',
+        'Skills',
+        '- TypeScript, Python, Kubernetes, AWS',
+      ].join('\n'),
+    });
+
+    const parsed = JSON.parse(result.content[0].text);
+    // Title Case headings should be detected just like ALL CAPS
+    expect(parsed.breakdown.sectionCompleteness.score).toBeGreaterThan(0);
+  });
+
   // ------------------------------------------------------------------
   // score_ats tool
   // ------------------------------------------------------------------

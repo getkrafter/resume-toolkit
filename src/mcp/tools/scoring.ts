@@ -45,12 +45,17 @@ export interface ScoringTool {
 const BULLET_RE = /^\s*(?:[-\u2022*]|\d+[.)]\s)/;
 
 /**
- * Matches lines that look like section headings:
- *   - ALL CAPS words (2+ chars, possibly with spaces)
- *   - Title Case lines that are short (under 50 chars) and not bullet-like
+ * Matches lines that look like ALL CAPS section headings:
+ *   - ALL CAPS words (2+ chars, possibly with spaces, &, /)
  */
 const HEADING_ALLCAPS_RE = /^[A-Z][A-Z &/]+$/;
-const HEADING_TITLECASE_RE = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$/;
+
+/**
+ * Matches known resume section keywords (case-insensitive).
+ * This catches Title Case headings like "Experience" or "Technical Skills"
+ * without false-positiving on job titles like "Senior Software Engineer".
+ */
+const KNOWN_SECTION_RE = /^(summary|profile|experience|work experience|employment|education|skills|projects|certifications?|courses?|awards?|honors?|publications?|interests?|languages?|references?|technical skills|professional experience|work history|objective|about me|volunteer)(?:\s*[:/|—–-]\s*.*)?$/i;
 
 // ---------------------------------------------------------------------------
 // parseRawText
@@ -62,8 +67,8 @@ const HEADING_TITLECASE_RE = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$/;
  * Detection strategy:
  * 1. Split into lines.
  * 2. Lines matching {@link BULLET_RE} are extracted as bullets (marker stripped).
- * 3. Short, non-bullet lines that are ALL CAPS or Title Case are treated as
- *    section headings.
+ * 3. Short, non-bullet lines that are ALL CAPS or match known resume section
+ *    keywords (case-insensitive) are treated as section headings.
  * 4. Lines that are neither bullets nor headings are ignored (they may be
  *    paragraph text, contact info, etc.).
  *
@@ -87,7 +92,7 @@ export function parseRawText(text: string): ResumeData {
       }
     } else if (
       trimmed.length < 50 &&
-      (HEADING_ALLCAPS_RE.test(trimmed) || HEADING_TITLECASE_RE.test(trimmed))
+      (HEADING_ALLCAPS_RE.test(trimmed) || KNOWN_SECTION_RE.test(trimmed))
     ) {
       sections.push(trimmed);
     }
