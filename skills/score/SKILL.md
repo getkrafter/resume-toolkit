@@ -91,29 +91,21 @@ Or for Krafter resumes, call `score_krafter_resume`:
 }
 ```
 
-**Option B — No MCP server** (skill installed without MCP):
+**Option B — CLI** (no MCP server needed):
 
-Run this inline script to score the resume. Replace the `resumeText` and `jdText` values with the actual content:
+1. Write the resume text to a temp file (e.g., `/tmp/resume.txt`).
+2. If a JD was provided, write it to another temp file (e.g., `/tmp/jd.txt`).
+3. Run:
 
 ```bash
-node --input-type=module -e "
-import { scoreResume, scoreATS } from '@getkrafter/resume-toolkit';
+# Without JD:
+npx @getkrafter/resume-toolkit score --resume /tmp/resume.txt
 
-const resumeText = process.env.RESUME_TEXT;
-const jdText = process.env.JD_TEXT || '';
-
-const lines = resumeText.split('\n');
-const bullets = lines.filter(l => /^\s*[-*•]|\d+[.)]/.test(l)).map(l => l.replace(/^\s*[-*•]\s*|\d+[.)]\s*/, '').trim());
-const sections = lines.filter(l => l.trim().length < 50 && l.trim().length > 0 && !(/^\s*[-*•]|\d+[.)]/.test(l)) && (l.trim() === l.trim().toUpperCase() || /^[A-Z][a-z]/.test(l.trim()))).map(l => l.trim().toLowerCase());
-
-const result = scoreResume({ rawText: resumeText, bullets, sections }, jdText || undefined);
-console.log(JSON.stringify(result, null, 2));
-" <<< ""
+# With JD:
+npx @getkrafter/resume-toolkit score --resume /tmp/resume.txt --jd /tmp/jd.txt
 ```
 
-Pass `RESUME_TEXT` and `JD_TEXT` as environment variables containing the resume and job description text. Parse the JSON output and present results per Step 6.
-
-If `@getkrafter/resume-toolkit` is not installed as a dependency, install it first: `npm install @getkrafter/resume-toolkit`
+The output is a JSON `ResumeScore` object. Parse it and present results per Step 6.
 
 ---
 

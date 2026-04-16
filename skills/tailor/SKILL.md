@@ -67,28 +67,20 @@ For pasted/file resumes:
 For Krafter resumes:
 1. `score_krafter_resume` with `{ id, jdText }` -- returns the full `ResumeScore` including the embedded `ATSResult`.
 
-**Option B — No MCP server** (skill installed without MCP):
+**Option B — CLI** (no MCP server needed):
 
-Run this inline script. Pass `RESUME_TEXT` and `JD_TEXT` as environment variables:
+1. Write the resume text to `/tmp/resume.txt` and the JD to `/tmp/jd.txt`.
+2. Run both commands:
 
 ```bash
-node --input-type=module -e "
-import { scoreResume, scoreATS } from '@getkrafter/resume-toolkit';
+# Full score with ATS:
+npx @getkrafter/resume-toolkit score --resume /tmp/resume.txt --jd /tmp/jd.txt
 
-const resumeText = process.env.RESUME_TEXT;
-const jdText = process.env.JD_TEXT;
-
-const lines = resumeText.split('\n');
-const bullets = lines.filter(l => /^\s*[-*•]|\d+[.)]/.test(l)).map(l => l.replace(/^\s*[-*•]\s*|\d+[.)]\s*/, '').trim());
-const sections = lines.filter(l => l.trim().length < 50 && l.trim().length > 0 && !(/^\s*[-*•]|\d+[.)]/.test(l)) && (l.trim() === l.trim().toUpperCase() || /^[A-Z][a-z]/.test(l.trim()))).map(l => l.trim().toLowerCase());
-
-const atsResult = scoreATS(resumeText, jdText);
-const scoreResult = scoreResume({ rawText: resumeText, bullets, sections }, jdText);
-console.log(JSON.stringify({ atsResult, scoreResult }, null, 2));
-" <<< ""
+# Standalone ATS analysis:
+npx @getkrafter/resume-toolkit ats --resume /tmp/resume.txt --jd /tmp/jd.txt
 ```
 
-If `@getkrafter/resume-toolkit` is not installed, run `npm install @getkrafter/resume-toolkit` first. Parse the JSON output and continue to Step 5.
+Parse the JSON output from each command and continue to Step 5.
 
 ### Step 5 -- Gap Analysis
 
