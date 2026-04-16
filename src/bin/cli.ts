@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { startServer } from '../mcp/server.js';
+import { parseRawText } from '../lib/resume-parser.js';
 import { scoreResume } from '../lib/resume-scorer.js';
 import { scoreATS } from '../lib/ats-scorer.js';
-import type { ResumeData } from '../lib/types.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -46,64 +46,4 @@ if (command === 'score') {
 function getFlag(args: string[], flag: string): string | undefined {
   const idx = args.indexOf(flag);
   return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
-}
-
-function parseRawText(text: string): ResumeData {
-  // Strip markdown formatting for rawText
-  const cleanText = text.replace(/^#+\s+/gm, '').replace(/\*+([^*]+)\*+/g, '$1');
-
-  const lines = text.split('\n');
-  const bullets: string[] = [];
-  const sections: string[] = [];
-  let currentSection = '';
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    // Detect markdown headings as sections
-    const headingMatch = trimmed.match(/^#{1,3}\s+(.+)/);
-    if (headingMatch) {
-      const heading = headingMatch[1].replace(/\|.*$/, '').trim().toLowerCase();
-      sections.push(heading);
-      currentSection = heading;
-      continue;
-    }
-
-    // Detect section headings (plain text resumes)
-    // ALL CAPS lines are reliable section headings (EXPERIENCE, EDUCATION, SKILLS)
-    // Title Case only matches known resume section keywords to avoid matching job titles
-    const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed) && trimmed.length < 50;
-    const knownSectionPattern = /^(summary|profile|experience|work experience|employment|education|skills|projects|certifications?|courses?|awards?|honors?|publications?|interests?|languages?|references?|technical skills|professional experience|work history|objective|about me|volunteer)/i;
-    const isTitleCaseSection = knownSectionPattern.test(trimmed) && trimmed.length < 50;
-
-    if (!(/^\s*[-*•]/.test(line) || /^\s*\d+[.)]/.test(line)) && (isAllCaps || isTitleCaseSection)) {
-      sections.push(trimmed.toLowerCase());
-      currentSection = trimmed.toLowerCase();
-      continue;
-    }
-
-    // Detect bullet points
-    const isNonBulletSection = /skill|competenc|tool|technolog|proficienc/i.test(currentSection);
-    const isWorkSection = /experience|work|project|employment|history/i.test(currentSection);
-    const hasMarker = /^\s*[-*•]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line);
-
-    // Unmarked bullets: long sentences in work sections (no marker, but reads like an achievement)
-    const isUnmarkedBullet = !hasMarker && isWorkSection && trimmed.length > 50 && /^[A-Z][a-z]/.test(trimmed);
-
-    if (hasMarker || isUnmarkedBullet) {
-      const content = hasMarker
-        ? trimmed.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '')
-        : trimmed;
-      if (isNonBulletSection) continue;
-      // Skip comma-separated lists (likely skills: "React, TypeScript, Node.js")
-      const commaCount = (content.match(/,/g) || []).length;
-      if (commaCount >= 3 && content.length < 200) continue;
-      // Skip short items (skill names, one-liners)
-      if (content.length <= 30) continue;
-      bullets.push(content);
-    }
-  }
-
-  return { rawText: cleanText, bullets, sections };
 }

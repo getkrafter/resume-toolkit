@@ -1,5 +1,6 @@
 // Stable public API — covered by semver guarantees
 export { scoreATS } from './ats-scorer.js';
+export { parseRawText } from './resume-parser.js';
 export { scoreResume, getVerbTier } from './resume-scorer.js';
 export { toResumeData } from './resume-transformer.js';
 export type {

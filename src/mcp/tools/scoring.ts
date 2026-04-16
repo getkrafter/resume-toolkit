@@ -10,7 +10,7 @@
  */
 import { z } from 'zod';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { ResumeData } from '../../lib/types.js';
+import { parseRawText } from '../../lib/resume-parser.js';
 import { scoreResume } from '../../lib/resume-scorer.js';
 import { scoreATS } from '../../lib/ats-scorer.js';
 
@@ -27,78 +27,6 @@ export interface ScoringTool {
   description: string;
   inputSchema: z.ZodObject<any>;
   handler: (args: any) => Promise<CallToolResult>;
-}
-
-// ---------------------------------------------------------------------------
-// Bullet / section detection patterns
-// ---------------------------------------------------------------------------
-
-/**
- * Matches lines that start with common bullet markers:
- *   - dash (-)
- *   - bullet character (bullet)
- *   - asterisk (*)
- *   - numbered list (1., 2., etc.)
- *
- * Allows optional leading whitespace.
- */
-const BULLET_RE = /^\s*(?:[-\u2022*]|\d+[.)]\s)/;
-
-/**
- * Matches lines that look like ALL CAPS section headings:
- *   - ALL CAPS words (2+ chars, possibly with spaces, &, /)
- */
-const HEADING_ALLCAPS_RE = /^[A-Z][A-Z &/]+$/;
-
-/**
- * Matches known resume section keywords (case-insensitive).
- * This catches Title Case headings like "Experience" or "Technical Skills"
- * without false-positiving on job titles like "Senior Software Engineer".
- */
-const KNOWN_SECTION_RE = /^(summary|profile|experience|work experience|employment|education|skills|projects|certifications?|courses?|awards?|honors?|publications?|interests?|languages?|references?|technical skills|professional experience|work history|objective|about me|volunteer)(?:\s*[:/|—–-]\s*.*)?$/i;
-
-// ---------------------------------------------------------------------------
-// parseRawText
-// ---------------------------------------------------------------------------
-
-/**
- * Parse raw pasted resume text into the internal {@link ResumeData} format.
- *
- * Detection strategy:
- * 1. Split into lines.
- * 2. Lines matching {@link BULLET_RE} are extracted as bullets (marker stripped).
- * 3. Short, non-bullet lines that are ALL CAPS or match known resume section
- *    keywords (case-insensitive) are treated as section headings.
- * 4. Lines that are neither bullets nor headings are ignored (they may be
- *    paragraph text, contact info, etc.).
- *
- * @param text - Raw resume text, typically pasted by the user.
- * @returns A {@link ResumeData} object with rawText, bullets, and sections.
- */
-export function parseRawText(text: string): ResumeData {
-  const lines = text.split('\n');
-  const bullets: string[] = [];
-  const sections: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    if (BULLET_RE.test(trimmed)) {
-      // Strip the bullet marker to get the pure bullet text
-      const bulletText = trimmed.replace(/^\s*(?:[-\u2022*]|\d+[.)]\s?)\s*/, '').trim();
-      if (bulletText) {
-        bullets.push(bulletText);
-      }
-    } else if (
-      trimmed.length < 50 &&
-      (HEADING_ALLCAPS_RE.test(trimmed) || KNOWN_SECTION_RE.test(trimmed))
-    ) {
-      sections.push(trimmed);
-    }
-  }
-
-  return { rawText: text, bullets, sections };
 }
 
 // ---------------------------------------------------------------------------
