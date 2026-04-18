@@ -5,15 +5,26 @@
  * tokenization, normalisation (with resume-domain synonym expansion),
  * and term extraction (unigrams + bigrams) used by the ATS scorer.
  */
-import natural from "natural";
+// Deep imports bypass natural's barrel (`natural/index.js`), which eagerly
+// loads `util/storage` → `pg` / `redis` → Node built-ins (`tls`, `net`, `fs`,
+// `node:diagnostics_channel`). Deep imports keep this library bundler-safe for
+// browser consumers (e.g. Krafter's editor). Version is pinned narrowly in
+// package.json to catch any upstream restructuring.
+import { PorterStemmer } from "natural/lib/natural/stemmers/index.js";
+import { WordTokenizer } from "natural/lib/natural/tokenizers/index.js";
+import {
+  BrillPOSTagger,
+  Lexicon,
+  RuleSet,
+} from "natural/lib/natural/brill_pos_tagger/index.js";
 
-const porterStemmer = natural.PorterStemmer;
-const wordTokenizer = new natural.WordTokenizer();
+const porterStemmer = PorterStemmer;
+const wordTokenizer = new WordTokenizer();
 
 // BrillPOSTagger for verb detection fallback
-const lexicon = new natural.Lexicon("EN", "N");
-const ruleSet = new natural.RuleSet("EN");
-const posTagger = new natural.BrillPOSTagger(lexicon, ruleSet);
+const lexicon = new Lexicon("EN", "N");
+const ruleSet = new RuleSet("EN");
+const posTagger = new BrillPOSTagger(lexicon, ruleSet);
 
 // ---------------------------------------------------------------------------
 // Constants
